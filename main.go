@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -23,7 +24,12 @@ type Claims struct {
 
 func main() {
 	var err error
-	db, err = sql.Open("mysql", "root:@tcp(127.0.0.1:3306)/gedung_db")
+	dsn := os.Getenv("DB_DSN")
+	if dsn == "" {
+		dsn = "root:@tcp(127.0.0.1:3306)/gedung_db"
+	}
+
+	db, err = sql.Open("mysql", dsn)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -36,22 +42,18 @@ func main() {
 	r.LoadHTMLGlob("templates/*.html")
 	r.Static("/static", "./static")
 
-	// Halaman form user
 	r.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "form.html", nil)
+		c.HTML(http.StatusOK, "login.html", nil)
 	})
 
-	// Halaman login admin
 	r.GET("/login", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "login.html", nil)
 	})
 
-	// Halaman admin (hanya bisa diakses jika token valid)
 	r.GET("/admin", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "admin.html", nil)
 	})
 
-	// 🔐 Login Admin
 	r.POST("/admin/login", func(c *gin.Context) {
 		var input struct {
 			Username string `json:"username"`
@@ -69,7 +71,6 @@ func main() {
 			return
 		}
 
-		// Buat token JWT
 		expTime := time.Now().Add(24 * time.Hour)
 		claims := &Claims{
 			AdminID: adminID,
@@ -90,7 +91,6 @@ func main() {
 		})
 	})
 
-	// Kirim peminjaman (public)
 	r.POST("/peminjaman", func(c *gin.Context) {
 		var input struct {
 			Nama     string `json:"nama"`
@@ -112,7 +112,6 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"message": "Pengajuan berhasil dikirim"})
 	})
 
-	// 🔐 Ambil semua data peminjaman
 	r.GET("/peminjaman", AuthMiddleware, func(c *gin.Context) {
 		rows, err := db.Query("SELECT id, nama, instansi, tanggal, kegiatan, status FROM peminjaman")
 		if err != nil {
@@ -147,7 +146,6 @@ func main() {
 		c.JSON(http.StatusOK, data)
 	})
 
-	// 🔐 Update status
 	r.PUT("/peminjaman/:id", AuthMiddleware, func(c *gin.Context) {
 		id := c.Param("id")
 		var input struct {
@@ -165,7 +163,6 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"message": "Status diperbarui"})
 	})
 
-	// 🔐 Hapus data
 	r.DELETE("/peminjaman/:id", AuthMiddleware, func(c *gin.Context) {
 		id := c.Param("id")
 		_, err := db.Exec("DELETE FROM peminjaman WHERE id=?", id)
@@ -176,10 +173,9 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"message": "Data berhasil dihapus"})
 	})
 
-	r.Run(":8080")
+	r.Run() // Akan pakai PORT dari Railway otomatis
 }
 
-// 🛡️ Middleware untuk memeriksa token JWT
 func AuthMiddleware(c *gin.Context) {
 	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {

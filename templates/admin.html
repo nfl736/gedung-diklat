@@ -14,6 +14,9 @@
       Panel Admin
       <button class="btn btn-danger btn-sm logout-btn" onclick="logout()">Logout</button>
     </h3>
+
+    <p id="jumlah" class="text-muted"></p>
+
     <table class="table table-bordered mt-3">
       <thead class="table-dark">
         <tr>
@@ -35,14 +38,15 @@
 
   <script>
     const token = localStorage.getItem("token");
+    const baseURL = "https://URL_RAILWAY_KAMU"; // Ganti dengan URL deploy Railway kamu
 
     if (!token) {
       alert("Belum login. Silakan login terlebih dahulu.");
-      window.location.href = "/";
+      window.location.href = "/login"; // arahkan ke login page
     }
 
     function loadData() {
-      fetch("http://localhost:8080/peminjaman", {
+      fetch(baseURL + "/peminjaman", {
         headers: {
           "Authorization": "Bearer " + token
         }
@@ -53,7 +57,10 @@
       })
       .then(data => {
         const tbody = document.getElementById("tabelData");
+        const jumlah = document.getElementById("jumlah");
         tbody.innerHTML = "";
+        jumlah.innerText = `Total peminjaman: ${data.length}`;
+
         data.forEach(row => {
           const tr = document.createElement("tr");
           tr.innerHTML = `
@@ -80,12 +87,12 @@
       .catch(err => {
         alert("Akses ditolak. Silakan login ulang.");
         localStorage.removeItem("token");
-        window.location.href = "/";
+        window.location.href = "/login";
       });
     }
 
     function ubahStatus(id, status) {
-      fetch(`http://localhost:8080/peminjaman/${id}`, {
+      fetch(`${baseURL}/peminjaman/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -102,7 +109,7 @@
 
     function hapus(id) {
       if (!confirm("Yakin ingin menghapus data ini?")) return;
-      fetch(`http://localhost:8080/peminjaman/${id}`, {
+      fetch(`${baseURL}/peminjaman/${id}`, {
         method: "DELETE",
         headers: {
           "Authorization": "Bearer " + token
@@ -118,7 +125,7 @@
     function logout() {
       localStorage.removeItem("token");
       alert("Berhasil logout");
-      window.location.href = "/";
+      window.location.href = "/login";
     }
 
     // ⏬ Panggil saat halaman dibuka
