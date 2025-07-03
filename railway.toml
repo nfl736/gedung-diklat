@@ -1,0 +1,5 @@
+[build]
+command = "go build -o main main.go"
+
+[deploy]
+command = "./main"
