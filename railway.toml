@@ -3,3 +3,7 @@ command = "go build -o main main.go"
 
 [deploy]
 command = "./main"
+
+[services.web]
+internal_port = 8080
+protocol = "http"
