@@ -14,10 +14,6 @@
       Panel Admin
       <button class="btn btn-danger btn-sm logout-btn" onclick="logout()">Logout</button>
     </h3>
-    
-    <!-- ✅ Tambahan ini -->
-    <p id="jumlah" class="text-muted"></p>
-
     <table class="table table-bordered mt-3">
       <thead class="table-dark">
         <tr>
@@ -57,12 +53,7 @@
       })
       .then(data => {
         const tbody = document.getElementById("tabelData");
-        const jumlah = document.getElementById("jumlah");
         tbody.innerHTML = "";
-        
-        // ✅ Menampilkan total data
-        jumlah.textContent = `Total peminjaman: ${data.length}`;
-
         data.forEach(row => {
           const tr = document.createElement("tr");
           tr.innerHTML = `
