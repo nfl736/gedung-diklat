@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Panel - Gedung Diklat</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background: #f8f9fa; }
+    .logout-btn { float: right; }
+  </style>
+</head>
+<body>
+  <div class="container mt-5">
+    <h3>
+      Panel Admin
+      <button class="btn btn-danger btn-sm logout-btn" onclick="logout()">Logout</button>
+    </h3>
+    
+    <!-- ✅ Tambahan ini -->
+    <p id="jumlah" class="text-muted"></p>
+
+    <table class="table table-bordered mt-3">
+      <thead class="table-dark">
+        <tr>
+          <th>ID</th>
+          <th>Nama</th>
+          <th>Instansi</th>
+          <th>Tanggal</th>
+          <th>Kegiatan</th>
+          <th>Status</th>
+          <th>Ubah Status</th>
+          <th>Hapus</th>
+        </tr>
+      </thead>
+      <tbody id="tabelData">
+        <!-- Data akan dimuat di sini -->
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      alert("Belum login. Silakan login terlebih dahulu.");
+      window.location.href = "/";
+    }
+
+    function loadData() {
+      fetch("http://localhost:8080/peminjaman", {
+        headers: {
+          "Authorization": "Bearer " + token
+        }
+      })
+      .then(res => {
+        if (res.status === 401) throw new Error("Token tidak valid");
+        return res.json();
+      })
+      .then(data => {
+        const tbody = document.getElementById("tabelData");
+        const jumlah = document.getElementById("jumlah");
+        tbody.innerHTML = "";
+        
+        // ✅ Menampilkan total data
+        jumlah.textContent = `Total peminjaman: ${data.length}`;
+
+        data.forEach(row => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${row.id}</td>
+            <td>${row.nama}</td>
+            <td>${row.instansi}</td>
+            <td>${row.tanggal}</td>
+            <td>${row.kegiatan}</td>
+            <td>${row.status}</td>
+            <td>
+              <select onchange="ubahStatus(${row.id}, this.value)" class="form-select form-select-sm">
+                <option selected disabled>-- pilih --</option>
+                <option value="Disetujui">Disetujui</option>
+                <option value="Ditolak">Ditolak</option>
+              </select>
+            </td>
+            <td>
+              <button class="btn btn-danger btn-sm" onclick="hapus(${row.id})">Hapus</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      })
+      .catch(err => {
+        alert("Akses ditolak. Silakan login ulang.");
+        localStorage.removeItem("token");
+        window.location.href = "/";
+      });
+    }
+
+    function ubahStatus(id, status) {
+      fetch(`http://localhost:8080/peminjaman/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({ status })
+      })
+      .then(res => res.json())
+      .then(res => {
+        alert(res.message);
+        loadData();
+      });
+    }
+
+    function hapus(id) {
+      if (!confirm("Yakin ingin menghapus data ini?")) return;
+      fetch(`http://localhost:8080/peminjaman/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": "Bearer " + token
+        }
+      })
+      .then(res => res.json())
+      .then(res => {
+        alert(res.message);
+        loadData();
+      });
+    }
+
+    function logout() {
+      localStorage.removeItem("token");
+      alert("Berhasil logout");
+      window.location.href = "/";
+    }
+
+    // ⏬ Panggil saat halaman dibuka
+    loadData();
+  </script>
+</body>
+</html>
